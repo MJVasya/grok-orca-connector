@@ -9,6 +9,7 @@ Orca discussion [#12668](https://github.com/OrcaSlicer/OrcaSlicer/discussions/12
 - This repo only Host-rewrites + tunnels (same as Fusion bridge).
 
 Flash Studio 1.7.x does **not** ship this.
+Native mode does **not** expose `ad5x_*` tools.
 
 ## 2. MaxEllis Remote API + `uvx orcaslicer-mcp`
 
@@ -25,9 +26,11 @@ Flash Studio 1.7.x does **not** ship this.
 - `detect_slicer`
 - `list_profiles`
 - `slice_model`
+- plus `ad5x_*` when `mcp-server/ad5x_lan.py` is present
 
 It shells the binary with Orca-style `--slice` flags. If Flash Studio dropped CLI, the tool returns the exact command + stderr so you can switch to an Orca build.
 
-## Flashforge LAN send
+## Flashforge AD5X LAN send
 
-Out of scope. Newer 5-series firmware has locked third-party send. Slice here; print from Flash Studio if needed.
+Enabled on remote + CLI MCP modes. Tools `ad5x_*` call printer HTTP `:8898` on the LAN (serial + Device ID). Not tunneled.
+See [AD5X-LAN.md](AD5X-LAN.md).
