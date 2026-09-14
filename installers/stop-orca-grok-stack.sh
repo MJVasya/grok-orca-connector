@@ -19,7 +19,6 @@ for f in "$STATE/bridge.pid" "$STATE/cli.pid" "$STATE/remote.pid" "$STATE/cloudf
   kill_pidfile "$f"
 done
 
-# Orphans: only tunnels whose argv mentions the Orca bridge port.
 if command -v pgrep >/dev/null; then
   while read -r pid; do
     [[ -n "$pid" ]] || continue
@@ -32,7 +31,6 @@ if command -v pgrep >/dev/null; then
   done < <(pgrep -f "cloudflared.*tunnel.*:${PORT}" || true)
 fi
 
-# Python listeners on Orca ports
 for p in "$PORT" "${ORCA_CLI_PORT:-18784}" "${ORCA_REMOTE_MCP_PORT:-18785}"; do
   if command -v lsof >/dev/null; then
     lsof -nP -iTCP:"$p" -sTCP:LISTEN -t 2>/dev/null | while read -r pid; do
@@ -42,7 +40,19 @@ for p in "$PORT" "${ORCA_CLI_PORT:-18784}" "${ORCA_REMOTE_MCP_PORT:-18785}"; do
 done
 
 echo "orca grok stack stopped"
-if command -v pgrep >/dev/null && pgrep -lf cloudflared >/dev/null 2>&1; then
-  echo "note: other cloudflared still running (e.g. Fusion). Orca :${PORT} should be gone."
-  pgrep -lf cloudflared || true
+
+still=""
+if command -v pgrep >/dev/null; then
+  still="$(pgrep -f "cloudflared.*tunnel.*:${PORT}" || true)"
+fi
+if [[ -z "$still" ]] && command -v lsof >/dev/null; then
+  if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+    still="listen"
+  fi
+fi
+
+if [[ -n "$still" ]]; then
+  echo "WARN: Orca tunnel/listener still on :${PORT}"
+  pgrep -lf "cloudflared.*:${PORT}" || true
+  lsof -nP -iTCP:"$PORT" -sTCP:LISTEN || true
 fi
