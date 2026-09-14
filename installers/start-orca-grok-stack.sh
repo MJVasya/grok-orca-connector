@@ -53,11 +53,18 @@ extract_url() {
   [[ -n "$host" ]] && echo "${host}/mcp"
 }
 
+# Any HTTP response (incl. 401/404) means the port is alive.
+# Only connection failures count as down.
 probe_http() {
   python3 - "$1" <<'PY'
-import sys, urllib.request
+import sys
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
+url = sys.argv[1]
 try:
-    urllib.request.urlopen(sys.argv[1], timeout=2)
+    urlopen(url, timeout=2)
+    sys.exit(0)
+except HTTPError:
     sys.exit(0)
 except Exception:
     sys.exit(1)
@@ -72,6 +79,7 @@ BRIDGE="${ROOT}/bridge/orca_mcp_bridge.py"
 CLI="${ROOT}/mcp-server/orca_cli_mcp.py"
 REMOTE="${ROOT}/mcp-server/orca_remote_mcp.py"
 [[ -f "$BRIDGE" ]] || { echo "missing bridge"; exit 1; }
+[[ -f "$REMOTE" ]] || { echo "missing remote MCP wrapper"; exit 1; }
 
 if [[ -z "${ORCA_API_TOKEN:-}" && -f "$TOKEN_FILE" ]]; then
   ORCA_API_TOKEN="$(tr -d '[:space:]' < "$TOKEN_FILE")"
