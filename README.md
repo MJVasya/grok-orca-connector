@@ -19,11 +19,16 @@ mkdir -p ~/.grok/orca-stack
 echo 'TOKEN_FROM_PREFERENCES' > ~/.grok/orca-stack/token
 chmod 600 ~/.grok/orca-stack/token
 
+# AD5X LAN (optional)
+# {"ip":"192.168.x.x","serial":"SN...","checkCode":"DEVICE_ID","httpPort":8898}
+# chmod 600 ~/.grok/orca-stack/ad5x.json
+
 start-orca-grok-stack
 ```
 
-Need: `Mode: MaxEllis Remote API HTTP-MCP wrapper`  
+Need: `Mode: MaxEllis Remote API HTTP-MCP wrapper` or CLI mode for `ad5x_*`.
 (401 on `:13130` is API up. Empty token / stock Orca without Remote API → CLI mode, no live GUI.)
+Native in-slicer `/mcp` does not include AD5X tools.
 
 ## Daily
 
@@ -92,10 +97,13 @@ Leave `~/.grok/fusion-stack` and Fusion brew formulas alone.
 | 18783 | Orca bridge (tunneled) |
 | 18784 | CLI MCP fallback |
 | 18785 | Remote-API HTTP-MCP wrapper |
+| 8898 | AD5X LAN HTTP (printer, not tunneled) |
 | 18782 | Fusion — not this repo |
 
 ## Live GUI tools (wrapper mode)
 
 `orca_health` `orca_status` `orca_get_config` `orca_set_config` `orca_load_model` `orca_arrange` `orca_slice` `orca_list_presets` `orca_select_preset` `orca_api`
 
-Docs: [docs/REMOTE-API.md](docs/REMOTE-API.md) · [docs/BACKENDS.md](docs/BACKENDS.md)
+AD5X LAN (same URL, printer stays local): `ad5x_discover` `ad5x_configure` `ad5x_health` `ad5x_detail` `ad5x_files` `ad5x_upload` `ad5x_print` `ad5x_job` `ad5x_control`
+
+Docs: [docs/REMOTE-API.md](docs/REMOTE-API.md) · [docs/BACKENDS.md](docs/BACKENDS.md) · [docs/AD5X-LAN.md](docs/AD5X-LAN.md)
