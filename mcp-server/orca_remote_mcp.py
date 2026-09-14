@@ -14,6 +14,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from pathlib import Path as _P
+import sys as _sys
+_sys.path.insert(0, str(_P(__file__).resolve().parent))
+try:
+    from ad5x_lan import AD5X_TOOLS, call_ad5x
+except Exception:
+    AD5X_TOOLS = []
+    def call_ad5x(name, args):
+        return None
+
 SERVER_NAME = "grok-orca-remote"
 SERVER_VERSION = "1.0.0"
 PROTOCOL = "2024-11-05"
@@ -143,10 +153,13 @@ TOOLS = [
             "required": ["path"],
         },
     },
-]
+] + AD5X_TOOLS
 
 
 def call_tool(name: str, args: dict):
+    ad = call_ad5x(name, args)
+    if ad is not None:
+        return ad
     if not TOKEN:
         return {"ok": False, "error": "ORCA_API_TOKEN empty. Preferences → Remote API."}
     if name == "orca_health":
