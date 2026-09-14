@@ -53,8 +53,6 @@ extract_url() {
   [[ -n "$host" ]] && echo "${host}/mcp"
 }
 
-# Any HTTP response (incl. 401/404) means the port is alive.
-# Only connection failures count as down.
 probe_http() {
   python3 - "$1" <<'PY'
 import sys
@@ -121,6 +119,7 @@ if [[ "$MODE" == "native" ]]; then
   start_bridge "$UPSTREAM"
   echo "native" > "$MODE_FILE"
   echo "Mode: native MCP proxy -> $UPSTREAM"
+  echo "NOTE: native mode has no ad5x_* tools. Use remote/CLI mode for AD5X LAN."
 elif [[ "$MODE" == "remote" ]]; then
   python3 "$REMOTE" --listen "$LISTEN" --port "$REMOTE_PORT" \
     >/dev/null 2>"$STATE/remote.log" &
@@ -165,4 +164,10 @@ fi
 printf '%s\n' "$URL" > "$URL_FILE"
 printf 'GROK_CONNECTOR_URL=%s\n' "$URL"
 echo "$URL" | pbcopy 2>/dev/null || true
+AD5X_CFG="${AD5X_CONFIG:-$HOME/.grok/orca-stack/ad5x.json}"
+if [[ -f "$AD5X_CFG" ]]; then
+  echo "AD5X LAN: config $AD5X_CFG (tools ad5x_* on same MCP URL in remote/cli mode)"
+else
+  echo "AD5X LAN: no config. write $AD5X_CFG or call ad5x_configure"
+fi
 echo "Stop: stop-orca-grok-stack"
