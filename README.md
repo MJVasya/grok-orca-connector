@@ -1,44 +1,101 @@
-# Grok Orca MCP Connector
+# Grok Orca stack
 
 Sibling of [grok-fusion-connector](https://github.com/MJVasya/grok-fusion-connector).
-Same pattern: local MCP → Host-rewrite bridge → Cloudflare quick tunnel → `GROK_CONNECTOR_URL` for [grok.com/connectors](https://grok.com/connectors) Custom.
+Local MCP → Host-rewrite bridge `:18783` → Cloudflare quick tunnel → `GROK_CONNECTOR_URL` for [grok.com/connectors](https://grok.com/connectors) Custom.
 
-Flash Studio Desktop (Orca-Flashforge fork, e.g. v1.7.17) has **no** official MCP or Remote API.
-This repo talks to whichever backend is actually present:
+Fusion stays on `:18782`. This stack does not stop Fusion.
 
-| Priority | Backend | Default |
-|---|---|---|
-| 1 | Native Orca MCP HTTP (`POST /mcp`) | `http://127.0.0.1:13619` |
-| 2 | MaxEllis Orca Remote API + this bridge | `http://127.0.0.1:13130` |
-| 3 | CLI MCP (this repo) against Orca **or** Flash Studio binary | local `python3 mcp-server/orca_cli_mcp.py` |
-
-Stock Flash Studio almost always lands on **3**.
-
-## Daily (Mac)
+## New install
 
 ```bash
-# once
-brew install cloudflare/cloudflare/cloudflared
+# Orca: MaxEllis MCP build + Preferences → Remote API → Enable → copy token
+brew install cloudflare/cloudflare/cloudflared   # if needed
+
+git clone https://github.com/MJVasya/grok-orca-connector.git
+cd grok-orca-connector
 bash installers/install-grok-orca.sh
 
-# each session: slicer running first
+mkdir -p ~/.grok/orca-stack
+echo 'TOKEN_FROM_PREFERENCES' > ~/.grok/orca-stack/token
+chmod 600 ~/.grok/orca-stack/token
+
 start-orca-grok-stack
-# paste GROK_CONNECTOR_URL into grok.com/connectors → Custom
+```
+
+Need: `Mode: MaxEllis Remote API HTTP-MCP wrapper`  
+(401 on `:13130` is API up. Empty token / stock Orca without Remote API → CLI mode, no live GUI.)
+
+## Daily
+
+Orca MCP app open, Remote API on → `start-orca-grok-stack` → paste URL into grok.com Custom.  
+Done with this chat → `stop-orca-grok-stack`.  
+No reinstall each session.  
+Grok Build + `uvx orcaslicer-mcp` still needs no stack.
+
+Prints `GROK_CONNECTOR_URL=https://….trycloudflare.com/mcp`. Hostname changes every start — update Custom.
+
+## Kill
+
+```bash
 stop-orca-grok-stack
+lsof -nP -iTCP:18783 -sTCP:LISTEN
 ```
 
-Hostname changes every `trycloudflare` start.
+Success is only:
 
-## Grok Build (no tunnel)
+```text
+orca grok stack stopped
+```
+
+A WARN line appears **only if** `:18783` is still up. Fusion `cloudflared … :18782` is ignored.
+
+Manual:
 
 ```bash
-grok mcp add --transport http orcaslicer http://127.0.0.1:18783/mcp
+kill "$(cat ~/.grok/orca-stack/bridge.pid)"
+kill "$(cat ~/.grok/orca-stack/remote.pid)"
+kill "$(cat ~/.grok/orca-stack/cloudflared.pid)"
+pkill -f 'cloudflared.*tunnel.*:18783'
 ```
 
-Or stdio MaxEllis server if you run the patched slicer:
+Do **not** `pkill cloudflared` if Fusion is running.
+
+## Update
 
 ```bash
-grok mcp add orcaslicer -e ORCA_API_TOKEN=TOKEN -- uvx orcaslicer-mcp
+stop-orca-grok-stack
+cd ~/grok-orca-connector
+git checkout -- installers/start-orca-grok-stack.sh installers/stop-orca-grok-stack.sh
+git pull
+bash installers/install-grok-orca.sh
+start-orca-grok-stack
 ```
 
-Docs: [docs/INSTALL.md](docs/INSTALL.md) · [docs/BACKENDS.md](docs/BACKENDS.md)
+Local edits on those scripts block `git pull`. Quick-tunnel host changes — update the Custom connector URL.
+
+## Remove
+
+```bash
+stop-orca-grok-stack
+rm -f ~/.grok/bin/start-orca-grok-stack ~/.grok/bin/stop-orca-grok-stack
+rm -rf ~/.grok/orca-stack ~/grok-orca-connector
+```
+
+Leave `~/.grok/fusion-stack` and Fusion brew formulas alone.
+
+## Ports
+
+| Port | Role |
+|---|---|
+| 13130 | MaxEllis Orca Remote API |
+| 13619 | Native in-app `/mcp` (rare on Mac) |
+| 18783 | Orca bridge (tunneled) |
+| 18784 | CLI MCP fallback |
+| 18785 | Remote-API HTTP-MCP wrapper |
+| 18782 | Fusion — not this repo |
+
+## Live GUI tools (wrapper mode)
+
+`orca_health` `orca_status` `orca_get_config` `orca_set_config` `orca_load_model` `orca_arrange` `orca_slice` `orca_list_presets` `orca_select_preset` `orca_api`
+
+Docs: [docs/REMOTE-API.md](docs/REMOTE-API.md) · [docs/BACKENDS.md](docs/BACKENDS.md)

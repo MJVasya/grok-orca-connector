@@ -1,44 +1,22 @@
-# Install, run, update, remove
+# Install / daily (short)
 
-## New install (Mac)
-
-1. Install a slicer:
-   - Preferred for live GUI tools: [MaxEllis OrcaSlicer MCP](https://github.com/MaxEllis/OrcaSlicer/releases) or [kosmo-sys OrcaSlicer-MCP](https://github.com/kosmo-sys/OrcaSlicer-MCP/releases).
-   - Or keep Flash Studio and use CLI mode.
-2. `cloudflared` on PATH (`brew install cloudflare/cloudflare/cloudflared`).
-3. From this repo:
+Same shape as Fusion. Clone is the install path until a `mjvasya/grok` formula exists.
 
 ```bash
+# Orca: Preferences → Remote API → token → ~/.grok/orca-stack/token
+brew install cloudflare/cloudflare/cloudflared   # if needed
+git clone https://github.com/MJVasya/grok-orca-connector.git
+cd grok-orca-connector
 bash installers/install-grok-orca.sh
+start-orca-grok-stack
 ```
 
-Never `sudo`.
-
-## After install (daily)
-
-Do **not** rerun the installer.
-
-1. Open the slicer (Orca MCP build, or Flash Studio for CLI-only).
-2. If using MaxEllis build: Preferences → Remote API → enable → token in `ORCA_API_TOKEN`.
-3. `start-orca-grok-stack` — prints `GROK_CONNECTOR_URL`.
-4. grok.com/connectors → New Connector → Custom → paste URL.
-5. `stop-orca-grok-stack` when done.
-
-## Env knobs
-
-| Var | Default | Meaning |
-|---|---|---|
-| `ORCA_MCP_UPSTREAM` | auto-detect `13619` then `13130` | Native `/mcp` base URL (no `/mcp` suffix) |
-| `BRIDGE_PORT` | `18783` | Local bridge port |
-| `ORCA_SLICER_BIN` | auto | Flash Studio / Orca binary for CLI mode |
-| `ORCA_SLICER_DATA` | auto | Preset/config directory |
-| `ORCA_API_TOKEN` | empty | MaxEllis Remote API |
-| `GROK_ORCA_STATE` | `~/.grok/orca-stack` | PIDs + tunnel log |
-
-## Remove
+Daily: Orca Remote API on → `start-orca-grok-stack` → paste URL.  
+If using Custom → `stop-orca-grok-stack`.  
+No reinstall each session.  
+Grok Build / `uvx orcaslicer-mcp` still needs no stack.
 
 ```bash
 stop-orca-grok-stack
-rm -rf ~/.grok/orca-stack ~/.grok/mcp/orca
-# drop [mcp_servers.orcaslicer] from ~/.grok/config.toml if present
+lsof -nP -iTCP:18783 -sTCP:LISTEN
 ```
