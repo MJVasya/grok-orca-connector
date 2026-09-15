@@ -1,7 +1,19 @@
 # Grok Orca stack
 
+> **Wrap of [MaxEllis/orcaslicer-mcp](https://github.com/MaxEllis/orcaslicer-mcp) + MaxEllis Orca Remote API** — not a stdio drop-in.
+> **What is different:** this repo exposes the slicer as **streamable HTTP MCP** and publishes it through a **Cloudflare quick tunnel** so **[grok.com Custom](https://grok.com/connectors)** (browser, no stdio) can call tools.
+> Upstream `uvx orcaslicer-mcp` is local Claude Desktop only. Full delta: **[FORK.md](FORK.md)**.
+
 Sibling of [grok-fusion-connector](https://github.com/MJVasya/grok-fusion-connector).
-Local MCP → Host-rewrite bridge `:18783` → Cloudflare quick tunnel → `GROK_CONNECTOR_URL` for [grok.com/connectors](https://grok.com/connectors) Custom.
+
+```
+Grok.com  ==HTTPS==>  https://xxxx.trycloudflare.com/mcp
+                         cloudflared
+                            :18783 bridge (Host rewrite)
+                            :18785 HTTP-MCP wrapper  <-- streamable HTTP
+                            :13130 MaxEllis Remote API
+AD5X stays local :8898 (not tunneled)
+```
 
 Fusion stays on `:18782`. This stack does not stop Fusion.
 
@@ -96,7 +108,7 @@ Leave `~/.grok/fusion-stack` and Fusion brew formulas alone.
 | 13619 | Native in-app `/mcp` (rare on Mac) |
 | 18783 | Orca bridge (tunneled) |
 | 18784 | CLI MCP fallback |
-| 18785 | Remote-API HTTP-MCP wrapper |
+| 18785 | Remote-API **HTTP-MCP wrapper** (streamable HTTP) |
 | 8898 | AD5X LAN HTTP (printer, not tunneled) |
 | 18782 | Fusion — not this repo |
 
@@ -106,4 +118,4 @@ Leave `~/.grok/fusion-stack` and Fusion brew formulas alone.
 
 AD5X LAN (same URL, printer stays local): `ad5x_discover` `ad5x_configure` `ad5x_health` `ad5x_detail` `ad5x_files` `ad5x_upload` `ad5x_print` `ad5x_job` `ad5x_control`
 
-Docs: [docs/REMOTE-API.md](docs/REMOTE-API.md) · [docs/BACKENDS.md](docs/BACKENDS.md) · [docs/AD5X-LAN.md](docs/AD5X-LAN.md)
+Docs: [FORK.md](FORK.md) · [docs/REMOTE-API.md](docs/REMOTE-API.md) · [docs/BACKENDS.md](docs/BACKENDS.md) · [docs/AD5X-LAN.md](docs/AD5X-LAN.md)
