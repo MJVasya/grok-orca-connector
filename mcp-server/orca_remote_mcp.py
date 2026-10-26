@@ -65,12 +65,22 @@ def api(method: str, path: str, body=None, timeout=180):
 
 
 def first_ok(tries):
-    last = None
+    attempts = []
     for method, path, body in tries:
-        last = api(method, path, body)
-        if last.get("ok"):
-            return last
-    return last or {"ok": False, "error": "no attempts"}
+        result = api(method, path, body)
+        if result.get("ok"):
+            return result
+        attempts.append(result)
+    if not attempts:
+        return {"ok": False, "error": "no attempts"}
+    # All candidates failed: surface the FIRST (canonical) candidate's
+    # error, not the last fallback's. The last try is the least likely to
+    # be the real route, and returning its error masks the actual failure
+    # (e.g. a missing file looked like a missing endpoint - issue #1).
+    # The full attempt list stays attached for debugging.
+    first = attempts[0]
+    first["attempts"] = attempts
+    return first
 
 
 TOOLS = [
@@ -199,15 +209,12 @@ def call_tool(name: str, args: dict):
             ]
         )
     if name == "orca_load_model":
-        p = args.get("path")
-        body = {"path": p, "file": p, "filename": p}
-        return first_ok(
-            [
-                ("POST", "/api/v1/models", body),
-                ("POST", "/api/v1/model", body),
-                ("POST", "/api/v1/load", body),
-            ]
-        )
+        # The Remote API's only load route is POST /api/v1/model with
+        # {"path": ...} (verified live against build 2.4.2; the upstream
+        # orcaslicer-mcp client calls the same route). /api/v1/models
+        # and /api/v1/load do not exist - probing them only delayed the
+        # call and, via first_ok, masked the real error (issue #1).
+        return api("POST", "/api/v1/model", {"path": args.get("path")})
     if name == "orca_arrange":
         body = {"arrange": args.get("arrange", True), "orient": args.get("orient", True)}
         return first_ok(
